@@ -1,16 +1,44 @@
 <!DOCTYPE html>
-<html>
-  <head><title>EmbeddedGPT</title>
-    <link rel="stylesheet" href="style.css"></head>
-  <body><h1>EmbeddedGPT</h1>
-    <p>AI-Powered Datesheet Assistsant for Embedded Emgineers</p>
-    <h2>Upload Datesheet</h2>
-    <input type="file">
-    <h2>Ask a Question</h2>
-    <input type="text" placeholder="Type your question here">
-    <button>Ask</button>
-    <h2>Answer</h2>
-    <textarea rows="8" cols="50"></textarea>
-    
-  </body>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>EmbeddedGPT</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>EmbeddedGPT</h1>
+
+        <p>AI-Powered Datasheet Assistant for Embedded Engineers</p>
+
+        <h2>📄 Upload Datasheet</h2>
+
+        <input type="file" accept=".pdf">
+
+        <h2>❓ Ask a Question</h2>
+
+        <input
+            type="text"
+            placeholder="Example: What is the operating voltage of the ESP32?">
+
+        <button>Ask</button>
+
+        <h2>💡 Answer</h2>
+
+        <textarea
+            rows="8"
+            placeholder="The AI's answer will appear here..."
+            readonly></textarea>
+
+    </div>
+
+</body>
+
 </html>
