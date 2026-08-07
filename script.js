@@ -1,0 +1,3 @@
+<DOCTYPE!js>
+  <js>
+  <\js>
