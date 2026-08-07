@@ -20,24 +20,29 @@
 
         <h2>📄 Upload Datasheet</h2>
 
-        <input type="file" accept=".pdf">
+         <input type="file" accept=".pdf" id="pdfFile">
 
         <h2>❓ Ask a Question</h2>
 
-        <input
-            type="text"
-            placeholder="Example: What is the operating voltage of the ESP32?">
+        
+            <input
+    type="text"
+    id="question"
+    placeholder="Example: What is the operating voltage of the ESP32?">
 
-        <button>Ask</button>
+        <button id="askButton">Ask</button>
+        
 
         <h2>💡 Answer</h2>
 
         <textarea
-            rows="8"
-            placeholder="The AI's answer will appear here..."
-            readonly></textarea>
+    id="answer"
+    rows="8"
+    placeholder="The AI's answer will appear here..."
+    readonly></textarea>
 
     </div>
+    <script src="script.js"></script>
 
 </body>
 
