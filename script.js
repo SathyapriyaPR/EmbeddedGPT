@@ -13,7 +13,7 @@ const answerBox = document.getElementById("answer");
 
 const pdfFile = document.getElementById("pdfFile");
 
-
+answerBox.value = "JavaScript is working!";
 // Check JavaScript is loaded
 
 console.log("EmbeddedGPT JavaScript Loaded");
