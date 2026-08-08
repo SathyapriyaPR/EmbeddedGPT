@@ -254,87 +254,207 @@ async function readPDF(file) {
 // ==========================================
 
 function findRelevantText(text, question) {
+// ==========================================
+// SMART TECHNICAL SEARCH
+// ==========================================
+
+function findRelevantText(text, question) {
+
+    const lowerText = text.toLowerCase();
+
+    const lowerQuestion = question.toLowerCase();
 
 
-    const lowerText =
-        text.toLowerCase();
+    // ==========================================
+    // Technical keyword mapping
+    // ==========================================
+
+    const keywordGroups = {
+
+        voltage: [
+            "voltage",
+            "operating voltage",
+            "supply voltage",
+            "power supply",
+            "vdd",
+            "vdd33"
+        ],
+
+        current: [
+            "current",
+            "operating current",
+            "supply current",
+            "consumption"
+        ],
+
+        frequency: [
+            "frequency",
+            "clock frequency",
+            "clock"
+        ],
+
+        temperature: [
+            "temperature",
+            "operating temperature",
+            "ambient temperature"
+        ],
+
+        gpio: [
+            "gpio",
+            "input",
+            "output",
+            "pin"
+        ],
+
+        power: [
+            "power",
+            "power consumption",
+            "power dissipation"
+        ]
+    };
 
 
-    const lowerQuestion =
-        question.toLowerCase();
+    // ==========================================
+    // Find which technical topic was asked
+    // ==========================================
+
+    let detectedTopic = null;
 
 
-    // Remove punctuation
+    for (const topic in keywordGroups) {
 
-    const cleanedQuestion =
-        lowerQuestion.replace(
-            /[?.,!]/g,
-            ""
-        );
+        for (const keyword of keywordGroups[topic]) {
 
+            if (lowerQuestion.includes(keyword)) {
 
-    // Split question
+                detectedTopic = topic;
 
-    const words =
-        cleanedQuestion.split(/\s+/);
+                break;
+            }
+        }
 
-
-    // Words we don't need
-
-    const stopWords = [
-
-        "what",
-        "is",
-        "the",
-        "of",
-        "a",
-        "an",
-        "for",
-        "to",
-        "in",
-        "on",
-        "and",
-        "or",
-        "does",
-        "how",
-        "where",
-        "which",
-        "please"
-    ];
-
-
-    // Keep useful words
-
-    const keywords =
-        words.filter(function(word) {
-
-            return (
-                word.length > 2 &&
-                !stopWords.includes(word)
-            );
-
-        });
+        if (detectedTopic !== null) {
+            break;
+        }
+    }
 
 
     console.log(
-        "Keywords:",
-        keywords
+        "Detected topic:",
+        detectedTopic
     );
 
 
-    // Search keywords
+    // ==========================================
+    // Special search for voltage questions
+    // ==========================================
 
-    for (
-        const keyword of keywords
-    ) {
+    if (detectedTopic === "voltage") {
+
+        const searchTerms = [
+            "recommended operating conditions",
+            "operating voltage",
+            "supply voltage",
+            "vdd33",
+            "3.0 v",
+            "3.3 v"
+        ];
+
+
+        for (const term of searchTerms) {
+
+            const position =
+                lowerText.indexOf(term);
+
+
+            if (position !== -1) {
+
+                const start =
+                    Math.max(
+                        0,
+                        position - 500
+                    );
+
+
+                const end =
+                    Math.min(
+                        text.length,
+                        position + 2500
+                    );
+
+
+                return text.substring(
+                    start,
+                    end
+                );
+            }
+        }
+    }
+
+
+    // ==========================================
+    // General technical search
+    // ==========================================
+
+    if (detectedTopic !== null) {
+
+        const terms =
+            keywordGroups[detectedTopic];
+
+
+        for (const term of terms) {
+
+            const position =
+                lowerText.indexOf(term);
+
+
+            if (position !== -1) {
+
+                const start =
+                    Math.max(
+                        0,
+                        position - 500
+                    );
+
+
+                const end =
+                    Math.min(
+                        text.length,
+                        position + 2000
+                    );
+
+
+                return text.substring(
+                    start,
+                    end
+                );
+            }
+        }
+    }
+
+
+    // ==========================================
+    // Normal keyword search
+    // ==========================================
+
+    const words =
+        lowerQuestion
+            .replace(/[?.,!]/g, "")
+            .split(/\s+/);
+
+
+    for (const word of words) {
+
+        if (word.length <= 3) {
+            continue;
+        }
 
 
         const position =
-            lowerText.indexOf(keyword);
+            lowerText.indexOf(word);
 
 
         if (position !== -1) {
-
 
             const start =
                 Math.max(
@@ -359,12 +479,6 @@ function findRelevantText(text, question) {
 
 
     return (
-        "No matching information was found.\n\n" +
-        "Try using a technical term such as:\n" +
-        "voltage\n" +
-        "current\n" +
-        "frequency\n" +
-        "temperature\n" +
-        "GPIO"
+        "No relevant information was found."
     );
-            }
+}
