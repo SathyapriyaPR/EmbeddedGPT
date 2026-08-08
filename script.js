@@ -12,7 +12,7 @@ const questionInput = document.getElementById("question");
 const answerBox = document.getElementById("answer");
 
 const pdfFile = document.getElementById("pdfFile");
-
+answerBox.value = "NEW JAVASCRIPT LOADED";
 
 // 2. Check that JavaScript loaded
 
