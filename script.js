@@ -5,19 +5,37 @@
 
 
 // Get HTML elements
+
 const button = document.getElementById("askButton");
 const questionInput = document.getElementById("question");
 const answerBox = document.getElementById("answer");
 const pdfFile = document.getElementById("pdfFile");
 
 
-// Check that JavaScript is loaded
+// Check JavaScript
+
 console.log("EmbeddedGPT JavaScript Loaded");
 
 
-// PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+// ==========================================
+// CHECK PDF.JS
+// ==========================================
+
+if (typeof pdfjsLib === "undefined") {
+
+    answerBox.value =
+        "❌ PDF.js failed to load.\n\n" +
+        "Please refresh the page.";
+
+    console.error("PDF.js is not loaded.");
+
+} else {
+
+    console.log("PDF.js loaded successfully.");
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
 
 
 // ==========================================
@@ -26,20 +44,28 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 
 button.addEventListener("click", async function () {
 
+    console.log("Ask button clicked");
+
+
     // Get question
-    const question = questionInput.value.trim();
+
+    const question =
+        questionInput.value.trim();
 
 
     // Check question
+
     if (question === "") {
 
-        answerBox.value = "Please enter a question.";
+        answerBox.value =
+            "Please enter a question.";
 
         return;
     }
 
 
     // Check PDF
+
     if (pdfFile.files.length === 0) {
 
         answerBox.value =
@@ -49,11 +75,20 @@ button.addEventListener("click", async function () {
     }
 
 
-    // Get selected file
-    const selectedFile = pdfFile.files[0];
+    // Get selected PDF
+
+    const selectedFile =
+        pdfFile.files[0];
 
 
-    // Check file type
+    console.log(
+        "Selected file:",
+        selectedFile.name
+    );
+
+
+    // Check file
+
     if (selectedFile.type !== "application/pdf") {
 
         answerBox.value =
@@ -63,31 +98,41 @@ button.addEventListener("click", async function () {
     }
 
 
-    // Show loading message
+    // Show loading
+
     answerBox.value =
-        "📖 Reading datasheet...\n\nPlease wait.";
+        "📖 Reading datasheet...\n\n" +
+        "Please wait...";
 
 
     try {
 
-        // Extract text from PDF
+        // Read PDF
+
         const extractedText =
             await readPDF(selectedFile);
 
 
-        // Check whether text was extracted
+        console.log(
+            "Characters extracted:",
+            extractedText.length
+        );
+
+
+        // Check extraction
+
         if (extractedText.trim() === "") {
 
             answerBox.value =
-                "The PDF was opened, but no text could be extracted.\n\n" +
-                "This may be a scanned/image-based PDF.";
+                "The PDF was opened, but no text was found.";
 
             return;
         }
 
 
         // Find relevant information
-        const relevantText =
+
+        const result =
             findRelevantText(
                 extractedText,
                 question
@@ -95,21 +140,26 @@ button.addEventListener("click", async function () {
 
 
         // Display result
+
         answerBox.value =
-            "🔎 EmbeddedGPT Result\n\n" +
+            "🔎 EmbeddedGPT\n\n" +
             "Question:\n" +
             question +
             "\n\n" +
-            "Relevant datasheet information:\n\n" +
-            relevantText;
+            "Relevant information:\n\n" +
+            result;
 
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "PDF ERROR:",
+            error
+        );
+
 
         answerBox.value =
-            "❌ PDF reading failed.\n\n" +
+            "❌ Something went wrong.\n\n" +
             "Error:\n" +
             error.message;
     }
@@ -123,55 +173,69 @@ button.addEventListener("click", async function () {
 
 async function readPDF(file) {
 
-    // Convert uploaded PDF into data
+
+    // Convert PDF into data
+
     const arrayBuffer =
         await file.arrayBuffer();
 
 
-    // Open PDF using PDF.js
+    // Open PDF
+
     const pdf =
         await pdfjsLib.getDocument({
             data: arrayBuffer
         }).promise;
 
 
-    // Store all extracted text
+    console.log(
+        "PDF pages:",
+        pdf.numPages
+    );
+
+
+    // Store text
+
     let text = "";
 
 
     // Read every page
+
     for (
         let pageNumber = 1;
         pageNumber <= pdf.numPages;
         pageNumber++
     ) {
 
+
         console.log(
-            "Reading page:",
-            pageNumber,
-            "of",
-            pdf.numPages
+            "Reading page",
+            pageNumber
         );
 
 
         // Get page
+
         const page =
             await pdf.getPage(pageNumber);
 
 
-        // Get page text
+        // Get text
+
         const textContent =
             await page.getTextContent();
 
 
-        // Convert PDF text pieces into normal text
+        // Convert pieces into text
+
         const pageText =
             textContent.items
                 .map(item => item.str)
                 .join(" ");
 
 
-        // Add page text
+        // Add text
+
         text +=
             "\nPAGE " +
             pageNumber +
@@ -181,26 +245,44 @@ async function readPDF(file) {
     }
 
 
-    // Return complete PDF text
     return text;
 }
 
 
 // ==========================================
-// FIND RELEVANT TEXT
+// FIND RELEVANT INFORMATION
 // ==========================================
 
 function findRelevantText(text, question) {
 
+
     const lowerText =
         text.toLowerCase();
+
 
     const lowerQuestion =
         question.toLowerCase();
 
 
-    // Important words to ignore
+    // Remove punctuation
+
+    const cleanedQuestion =
+        lowerQuestion.replace(
+            /[?.,!]/g,
+            ""
+        );
+
+
+    // Split question
+
+    const words =
+        cleanedQuestion.split(/\s+/);
+
+
+    // Words we don't need
+
     const stopWords = [
+
         "what",
         "is",
         "the",
@@ -216,33 +298,36 @@ function findRelevantText(text, question) {
         "does",
         "how",
         "where",
-        "which"
+        "which",
+        "please"
     ];
 
 
-    // Convert question into words
-    const words =
-        lowerQuestion
-            .replace(/[?.,!]/g, "")
-            .split(/\s+/);
-
-
     // Keep useful words
+
     const keywords =
-        words.filter(word =>
-            word.length > 2 &&
-            !stopWords.includes(word)
-        );
+        words.filter(function(word) {
+
+            return (
+                word.length > 2 &&
+                !stopWords.includes(word)
+            );
+
+        });
 
 
     console.log(
-        "Question keywords:",
+        "Keywords:",
         keywords
     );
 
 
-    // Search for keywords
-    for (const keyword of keywords) {
+    // Search keywords
+
+    for (
+        const keyword of keywords
+    ) {
+
 
         const position =
             lowerText.indexOf(keyword);
@@ -250,8 +335,12 @@ function findRelevantText(text, question) {
 
         if (position !== -1) {
 
+
             const start =
-                Math.max(0, position - 800);
+                Math.max(
+                    0,
+                    position - 500
+                );
 
 
             const end =
@@ -269,9 +358,13 @@ function findRelevantText(text, question) {
     }
 
 
-    // Nothing found
     return (
-        "No directly matching information was found.\n\n" +
-        "Try asking using a technical term from the datasheet."
+        "No matching information was found.\n\n" +
+        "Try using a technical term such as:\n" +
+        "voltage\n" +
+        "current\n" +
+        "frequency\n" +
+        "temperature\n" +
+        "GPIO"
     );
-                }
+            }
