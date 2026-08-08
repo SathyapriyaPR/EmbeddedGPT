@@ -1,10 +1,9 @@
 // ==========================================
 // EmbeddedGPT - JavaScript
-// Version 1.0
 // ==========================================
 
 
-// 1. Get the HTML elements
+// Find HTML elements
 
 const button = document.getElementById("askButton");
 
@@ -15,26 +14,153 @@ const answerBox = document.getElementById("answer");
 const pdfFile = document.getElementById("pdfFile");
 
 
-// 2. Check whether the JavaScript file loaded
+// Check JavaScript is loaded
 
 console.log("EmbeddedGPT JavaScript Loaded");
 
 
-// 3. Listen for the Ask button click
+// When Ask button is clicked
 
 button.addEventListener("click", async function () {
 
-    // 4. Get the question typed by the user
+    // Get the question
 
     let question = questionInput.value;
 
-
-    // 5. Remove unnecessary spaces
+    // Remove extra spaces
 
     question = question.trim();
 
 
-    // 6. Check whether the question is empty
+    // Check if question is empty
+
+    if (question === "") {
+
+        answerBox.value = "Please enter a question.";
+
+        return;
+    }
+
+
+    // Check if PDF is selected
+
+    if (pdfFile.files.length === 0) {
+
+        answerBox.value = "Please upload a datasheet PDF first.";
+
+        return;
+    }
+
+
+    // Get the selected PDF
+
+    const selectedFile = pdfFile.files[0];
+
+
+    // Check if it is a PDF
+
+    if (selectedFile.type !== "application/pdf") {
+
+        answerBox.value = "Please select a valid PDF datasheet.";
+
+        return;
+    }
+
+
+    // Tell user that PDF is being read
+
+    answerBox.value = "Reading datasheet... Please wait.";
+
+
+    // Try to read the PDF
+
+    try {
+
+        const extractedText = await readPDF(selectedFile);
+
+
+        // Show extracted text
+
+        answerBox.value =
+            "Datasheet read successfully!\n\n" +
+            "Your question:\n" +
+            question +
+            "\n\n" +
+            "Extracted text:\n\n" +
+            extractedText.substring(0, 5000);
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        answerBox.value =
+            "Sorry, I could not read this PDF.\n\n" +
+            "Error: " +
+            error.message;
+    }
+
+});
+
+
+// ==========================================
+// PDF TEXT EXTRACTION
+// ==========================================
+
+async function readPDF(file) {
+
+    // Convert PDF into data
+
+    const arrayBuffer = await file.arrayBuffer();
+
+
+    // Open PDF using PDF.js
+
+    const pdf = await pdfjsLib.getDocument({
+        data: arrayBuffer
+    }).promise;
+
+
+    // Create empty text
+
+    let text = "";
+
+
+    // Go through every page
+
+    for (
+        let pageNumber = 1;
+        pageNumber <= pdf.numPages;
+        pageNumber++
+    ) {
+
+        // Get current page
+
+        const page = await pdf.getPage(pageNumber);
+
+
+        // Get text from page
+
+        const textContent = await page.getTextContent();
+
+
+        // Convert text pieces into text
+
+        const pageText = textContent.items
+            .map(item => item.str)
+            .join(" ");
+
+
+        // Add page text
+
+        text += pageText + "\n";
+    }
+
+
+    // Return extracted text
+
+    return text;
+}    // 6. Check whether the question is empty
 
     if (question === "") {
 
