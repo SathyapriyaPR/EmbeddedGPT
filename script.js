@@ -1,35 +1,36 @@
 // ==========================================
-// EmbeddedGPT - JavaScript
+// EmbeddedGPT
+// PDF Datasheet Reader
 // ==========================================
 
 
-// 1. Get HTML elements
-
+// Get HTML elements
 const button = document.getElementById("askButton");
-
 const questionInput = document.getElementById("question");
-
 const answerBox = document.getElementById("answer");
-
 const pdfFile = document.getElementById("pdfFile");
-answerBox.value = "NEW JAVASCRIPT LOADED";
 
-// 2. Check that JavaScript loaded
 
+// Check that JavaScript is loaded
 console.log("EmbeddedGPT JavaScript Loaded");
 
 
-// 3. Ask button
+// PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+
+// ==========================================
+// ASK BUTTON
+// ==========================================
 
 button.addEventListener("click", async function () {
 
     // Get question
-
-    let question = questionInput.value.trim();
+    const question = questionInput.value.trim();
 
 
     // Check question
-
     if (question === "") {
 
         answerBox.value = "Please enter a question.";
@@ -39,53 +40,66 @@ button.addEventListener("click", async function () {
 
 
     // Check PDF
-
     if (pdfFile.files.length === 0) {
 
-        answerBox.value = "Please upload a datasheet PDF first.";
+        answerBox.value =
+            "Please upload a datasheet PDF first.";
 
         return;
     }
 
 
-    // Get PDF
-
+    // Get selected file
     const selectedFile = pdfFile.files[0];
 
 
-    // Check PDF type
-
+    // Check file type
     if (selectedFile.type !== "application/pdf") {
 
-        answerBox.value = "Please select a valid PDF datasheet.";
+        answerBox.value =
+            "Please select a valid PDF datasheet.";
 
         return;
     }
 
 
-    // Start reading
-
-    answerBox.value = "Reading datasheet... Please wait.";
+    // Show loading message
+    answerBox.value =
+        "📖 Reading datasheet...\n\nPlease wait.";
 
 
     try {
 
-        // Read PDF
+        // Extract text from PDF
+        const extractedText =
+            await readPDF(selectedFile);
 
-        const extractedText = await readPDF(selectedFile);
+
+        // Check whether text was extracted
+        if (extractedText.trim() === "") {
+
+            answerBox.value =
+                "The PDF was opened, but no text could be extracted.\n\n" +
+                "This may be a scanned/image-based PDF.";
+
+            return;
+        }
 
 
         // Find relevant information
+        const relevantText =
+            findRelevantText(
+                extractedText,
+                question
+            );
 
-        const relevantText = findRelevantText(
-            extractedText,
-            question
-        );
 
-
-        // Display relevant information
-
+        // Display result
         answerBox.value =
+            "🔎 EmbeddedGPT Result\n\n" +
+            "Question:\n" +
+            question +
+            "\n\n" +
             "Relevant datasheet information:\n\n" +
             relevantText;
 
@@ -95,251 +109,79 @@ button.addEventListener("click", async function () {
         console.error(error);
 
         answerBox.value =
-            "Sorry, I could not read this PDF.\n\n" +
-            "Error: " +
+            "❌ PDF reading failed.\n\n" +
+            "Error:\n" +
             error.message;
-
     }
 
 });
 
 
 // ==========================================
-// PDF TEXT EXTRACTION
+// READ PDF
 // ==========================================
 
 async function readPDF(file) {
 
-    // Convert PDF into data
-
-    const arrayBuffer = await file.arrayBuffer();
+    // Convert uploaded PDF into data
+    const arrayBuffer =
+        await file.arrayBuffer();
 
 
     // Open PDF using PDF.js
+    const pdf =
+        await pdfjsLib.getDocument({
+            data: arrayBuffer
+        }).promise;
 
-    const pdf = await pdfjsLib.getDocument({
-        data: arrayBuffer
-    }).promise;
 
-
-    // Create empty text
-
+    // Store all extracted text
     let text = "";
 
 
     // Read every page
-
     for (
         let pageNumber = 1;
         pageNumber <= pdf.numPages;
         pageNumber++
     ) {
 
-        // Get current page
-
-        const page = await pdf.getPage(pageNumber);
-
-
-        // Get text from current page
-
-        const textContent = await page.getTextContent();
-
-
-        // Convert text pieces into normal text
-
-        const pageText = textContent.items
-            .map(item => item.str)
-            .join(" ");
-
-
-        // Add page text
-
-        text += pageText + "\n";
-    }
-
-
-    // Return extracted text
-
-    return text;
-}
-
-
-// ==========================================
-// FIND RELEVANT TEXT
-// ==========================================
-
-function findRelevantText(text, question) {
-
-    // Convert everything to lowercase
-
-    const lowerText = text.toLowerCase();
-
-    const lowerQuestion = question.toLowerCase();
-
-
-    // Split question into individual words
-
-    const words = lowerQuestion.split(" ");
-
-
-    // Store useful keywords
-
-    let keywords = [];
-
-
-    // Keep useful words
-
-    for (let word of words) {
-
-        if (word.length > 3) {
-
-            keywords.push(word);
-        }
-    }
-
-
-    // Search for keywords
-
-    for (let keyword of keywords) {
-
-        const position = lowerText.indexOf(keyword);
-
-
-        if (position !== -1) {
-
-            // Get text around the keyword
-
-            const start = Math.max(
-                0,
-                position - 500
-            );
-
-
-            const end = Math.min(
-                text.length,
-                position + 1500
-            );
-
-
-            return text.substring(start, end);
-        }
-    }
-
-
-    // Nothing found
-
-    return "No relevant information found in the datasheet.";
-}
-    const selectedFile = pdfFile.files[0];
-
-
-    // Check PDF type
-
-    if (selectedFile.type !== "application/pdf") {
-
-        answerBox.value = "Please select a valid PDF datasheet.";
-
-        return;
-    }
-
-
-    // Start reading
-
-    answerBox.value = "Reading datasheet... Please wait.";
-
-
-    try {
-
-        // Read PDF
-
-        const extractedText = await readPDF(selectedFile);
-
-
-        // Find relevant information
-
-        const relevantText = findRelevantText(
-            extractedText,
-            question
+        console.log(
+            "Reading page:",
+            pageNumber,
+            "of",
+            pdf.numPages
         );
 
 
-        // Display relevant information
-
-        answerBox.value =
-            "Relevant datasheet information:\n\n" +
-            relevantText;
+        // Get page
+        const page =
+            await pdf.getPage(pageNumber);
 
 
-    } catch (error) {
-
-        console.error(error);
-
-        answerBox.value =
-            "Sorry, I could not read this PDF.\n\n" +
-            "Error: " +
-            error.message;
-
-    }
-
-});
+        // Get page text
+        const textContent =
+            await page.getTextContent();
 
 
-// ==========================================
-// PDF TEXT EXTRACTION
-// ==========================================
-
-async function readPDF(file) {
-
-    // Convert PDF into data
-
-    const arrayBuffer = await file.arrayBuffer();
-
-
-    // Open PDF using PDF.js
-
-    const pdf = await pdfjsLib.getDocument({
-        data: arrayBuffer
-    }).promise;
-
-
-    // Create empty text
-
-    let text = "";
-
-
-    // Read every page
-
-    for (
-        let pageNumber = 1;
-        pageNumber <= pdf.numPages;
-        pageNumber++
-    ) {
-
-        // Get current page
-
-        const page = await pdf.getPage(pageNumber);
-
-
-        // Get text from current page
-
-        const textContent = await page.getTextContent();
-
-
-        // Convert text pieces into normal text
-
-        const pageText = textContent.items
-            .map(item => item.str)
-            .join(" ");
+        // Convert PDF text pieces into normal text
+        const pageText =
+            textContent.items
+                .map(item => item.str)
+                .join(" ");
 
 
         // Add page text
-
-        text += pageText + "\n";
+        text +=
+            "\nPAGE " +
+            pageNumber +
+            "\n" +
+            pageText +
+            "\n";
     }
 
 
-    // Return extracted text
-
+    // Return complete PDF text
     return text;
 }
 
@@ -350,227 +192,86 @@ async function readPDF(file) {
 
 function findRelevantText(text, question) {
 
-    // Convert everything to lowercase
+    const lowerText =
+        text.toLowerCase();
 
-    const lowerText = text.toLowerCase();
-
-    const lowerQuestion = question.toLowerCase();
-
-
-    // Split question into individual words
-
-    const words = lowerQuestion.split(" ");
+    const lowerQuestion =
+        question.toLowerCase();
 
 
-    // Store useful keywords
+    // Important words to ignore
+    const stopWords = [
+        "what",
+        "is",
+        "the",
+        "of",
+        "a",
+        "an",
+        "for",
+        "to",
+        "in",
+        "on",
+        "and",
+        "or",
+        "does",
+        "how",
+        "where",
+        "which"
+    ];
 
-    let keywords = [];
+
+    // Convert question into words
+    const words =
+        lowerQuestion
+            .replace(/[?.,!]/g, "")
+            .split(/\s+/);
 
 
     // Keep useful words
+    const keywords =
+        words.filter(word =>
+            word.length > 2 &&
+            !stopWords.includes(word)
+        );
 
-    for (let word of words) {
 
-        if (word.length > 3) {
-
-            keywords.push(word);
-        }
-    }
+    console.log(
+        "Question keywords:",
+        keywords
+    );
 
 
     // Search for keywords
+    for (const keyword of keywords) {
 
-    for (let keyword of keywords) {
-
-        const position = lowerText.indexOf(keyword);
+        const position =
+            lowerText.indexOf(keyword);
 
 
         if (position !== -1) {
 
-            // Get text around the keyword
+            const start =
+                Math.max(0, position - 800);
 
-            const start = Math.max(
-                0,
-                position - 500
+
+            const end =
+                Math.min(
+                    text.length,
+                    position + 2000
+                );
+
+
+            return text.substring(
+                start,
+                end
             );
-
-
-            const end = Math.min(
-                text.length,
-                position + 1500
-            );
-
-
-            return text.substring(start, end);
         }
     }
 
 
     // Nothing found
-
-    return "No relevant information found in the datasheet.";
-}
-        answerBox.value = "Please select a valid PDF datasheet.";
-
-        return;
-    }
-
-
-    // Start reading
-
-    answerBox.value = "Reading datasheet... Please wait.";
-
-
-    try {
-
-        // Read PDF
-
-        const extractedText = await readPDF(selectedFile);
-
-
-        // Display extracted text
-
-        const relevantText = findRelevantText(
-    extractedText,
-    question
-);
-
-answerBox.value =
-    "Relevant datasheet information:\n\n" +
-    relevantText;
-
-
-    } catch (error) {
-
-        console.error(error);
-
-        answerBox.value =
-            "Sorry, I could not read this PDF.\n\n" +
-            "Error: " +
-            error.message;
-
-    }
-
-});
-
-
-// ==========================================
-// PDF TEXT EXTRACTION
-// ==========================================
-
-async function readPDF(file) {
-
-    // Convert PDF into data
-
-    const arrayBuffer = await file.arrayBuffer();
-
-
-    // Open PDF using PDF.js
-
-    const pdf = await pdfjsLib.getDocument({
-        data: arrayBuffer
-    }).promise;
-
-
-    // Create empty text
-
-    let text = "";
-
-
-    // Read every page
-
-    for (
-        let pageNumber = 1;
-        pageNumber <= pdf.numPages;
-        pageNumber++
-    ) {
-
-        // Get current page
-
-        const page = await pdf.getPage(pageNumber);
-
-
-        // Get text from current page
-
-        const textContent = await page.getTextContent();
-
-
-        // Convert text pieces into normal text
-
-        const pageText = textContent.items
-            .map(item => item.str)
-            .join(" ");
-
-
-        // Add page text
-
-        text += pageText + "\n";
-    }
-
-
-    // Return extracted text
-
-    return text;
-}
-// ==========================================
-// FIND RELEVANT TEXT
-// ==========================================
-
-function findRelevantText(text, question) {
-
-    // Convert everything to lowercase
-
-    const lowerText = text.toLowerCase();
-
-    const lowerQuestion = question.toLowerCase();
-
-
-    // Split question into individual words
-
-    const words = lowerQuestion.split(" ");
-
-
-    // Store useful keywords
-
-    let keywords = [];
-
-
-    // Keep important words
-
-    for (let word of words) {
-
-        if (word.length > 3) {
-
-            keywords.push(word);
-        }
-    }
-
-
-    // Find the first useful keyword
-
-    for (let keyword of keywords) {
-
-        const position = lowerText.indexOf(keyword);
-
-
-        if (position !== -1) {
-
-            // Get text around the keyword
-
-            const start = Math.max(0, position - 500);
-
-            const end = Math.min(
-                text.length,
-                position + 1500
-            );
-
-
-            return text.substring(start, end);
-        }
-    }
-
-
-    // If nothing is found
-
-    return "No relevant information found in the datasheet.";
-}
+    return (
+        "No directly matching information was found.\n\n" +
+        "Try asking using a technical term from the datasheet."
+    );
+                }
