@@ -13,7 +13,7 @@ const answerBox = document.getElementById("answer");
 
 const pdfFile = document.getElementById("pdfFile");
 
-
+answerBox.value = "Test pdf extraction ";
 // 2. Check that JavaScript loaded
 
 console.log("EmbeddedGPT JavaScript Loaded");
