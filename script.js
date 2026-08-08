@@ -2,7 +2,7 @@
 // EmbeddedGPT
 // PDF Datasheet Reader
 // ==========================================
-
+alert("NEW EMBEDDEDGPT CODE");
 
 // Get HTML elements
 
