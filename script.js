@@ -253,205 +253,102 @@ async function readPDF(file) {
 // FIND RELEVANT INFORMATION
 // ==========================================
 
-function findRelevantText(text, question) {
-// ==========================================
-// SMART TECHNICAL SEARCH
+        // ==========================================
+// SMART DATASHEET SEARCH - VERSION 2
 // ==========================================
 
 function findRelevantText(text, question) {
 
     const lowerText = text.toLowerCase();
-
     const lowerQuestion = question.toLowerCase();
 
-
-    // ==========================================
-    // Technical keyword mapping
-    // ==========================================
-
-    const keywordGroups = {
-
-        voltage: [
-            "voltage",
-            "operating voltage",
-            "supply voltage",
-            "power supply",
-            "vdd",
-            "vdd33"
-        ],
-
-        current: [
-            "current",
-            "operating current",
-            "supply current",
-            "consumption"
-        ],
-
-        frequency: [
-            "frequency",
-            "clock frequency",
-            "clock"
-        ],
-
-        temperature: [
-            "temperature",
-            "operating temperature",
-            "ambient temperature"
-        ],
-
-        gpio: [
-            "gpio",
-            "input",
-            "output",
-            "pin"
-        ],
-
-        power: [
-            "power",
-            "power consumption",
-            "power dissipation"
-        ]
-    };
+    console.log("Question:", question);
 
 
     // ==========================================
-    // Find which technical topic was asked
+    // VOLTAGE QUESTION
     // ==========================================
 
-    let detectedTopic = null;
+    if (
+        lowerQuestion.includes("voltage") ||
+        lowerQuestion.includes("vdd") ||
+        lowerQuestion.includes("supply")
+    ) {
+
+        console.log("Voltage question detected");
 
 
-    for (const topic in keywordGroups) {
-
-        for (const keyword of keywordGroups[topic]) {
-
-            if (lowerQuestion.includes(keyword)) {
-
-                detectedTopic = topic;
-
-                break;
-            }
-        }
-
-        if (detectedTopic !== null) {
-            break;
-        }
-    }
+        // Look for the actual electrical section
+        const electricalPosition =
+            lowerText.indexOf(
+                "5. electrical characteristics"
+            );
 
 
-    console.log(
-        "Detected topic:",
-        detectedTopic
-    );
+        if (electricalPosition !== -1) {
+
+            const electricalSection =
+                text.substring(
+                    electricalPosition
+                );
 
 
-    // ==========================================
-    // Special search for voltage questions
-    // ==========================================
-
-    if (detectedTopic === "voltage") {
-
-        const searchTerms = [
-            "recommended operating conditions",
-            "operating voltage",
-            "supply voltage",
-            "vdd33",
-            "3.0 v",
-            "3.3 v"
-        ];
+            const lowerElectricalSection =
+                electricalSection.toLowerCase();
 
 
-        for (const term of searchTerms) {
+            // Look for recommended operating conditions
+            const operatingPosition =
+                lowerElectricalSection.indexOf(
+                    "recommended operating conditions"
+                );
 
-            const position =
-                lowerText.indexOf(term);
 
-
-            if (position !== -1) {
+            if (operatingPosition !== -1) {
 
                 const start =
                     Math.max(
                         0,
-                        position - 500
+                        operatingPosition - 500
                     );
 
 
                 const end =
                     Math.min(
-                        text.length,
-                        position + 2500
+                        electricalSection.length,
+                        operatingPosition + 4000
                     );
 
 
-                return text.substring(
+                return electricalSection.substring(
                     start,
                     end
                 );
             }
+
+
+            // If the exact heading isn't found,
+            // return the electrical section
+            return electricalSection.substring(
+                0,
+                4000
+            );
         }
     }
 
 
     // ==========================================
-    // General technical search
+    // CURRENT QUESTION
     // ==========================================
 
-    if (detectedTopic !== null) {
-
-        const terms =
-            keywordGroups[detectedTopic];
-
-
-        for (const term of terms) {
-
-            const position =
-                lowerText.indexOf(term);
-
-
-            if (position !== -1) {
-
-                const start =
-                    Math.max(
-                        0,
-                        position - 500
-                    );
-
-
-                const end =
-                    Math.min(
-                        text.length,
-                        position + 2000
-                    );
-
-
-                return text.substring(
-                    start,
-                    end
-                );
-            }
-        }
-    }
-
-
-    // ==========================================
-    // Normal keyword search
-    // ==========================================
-
-    const words =
-        lowerQuestion
-            .replace(/[?.,!]/g, "")
-            .split(/\s+/);
-
-
-    for (const word of words) {
-
-        if (word.length <= 3) {
-            continue;
-        }
-
+    if (
+        lowerQuestion.includes("current")
+    ) {
 
         const position =
-            lowerText.indexOf(word);
+            lowerText.lastIndexOf(
+                "operating current"
+            );
 
 
         if (position !== -1) {
@@ -466,7 +363,7 @@ function findRelevantText(text, question) {
             const end =
                 Math.min(
                     text.length,
-                    position + 2000
+                    position + 2500
                 );
 
 
@@ -478,7 +375,157 @@ function findRelevantText(text, question) {
     }
 
 
-    return (
-        "No relevant information was found."
-    );
-}
+    // ==========================================
+    // FREQUENCY QUESTION
+    // ==========================================
+
+    if (
+        lowerQuestion.includes("frequency") ||
+        lowerQuestion.includes("clock")
+    ) {
+
+        const position =
+            lowerText.lastIndexOf(
+                "frequency"
+            );
+
+
+        if (position !== -1) {
+
+            const start =
+                Math.max(
+                    0,
+                    position - 500
+                );
+
+
+            const end =
+                Math.min(
+                    text.length,
+                    position + 2500
+                );
+
+
+            return text.substring(
+                start,
+                end
+            );
+        }
+    }
+
+
+    // ==========================================
+    // TEMPERATURE QUESTION
+    // ==========================================
+
+    if (
+        lowerQuestion.includes("temperature")
+    ) {
+
+        const position =
+            lowerText.lastIndexOf(
+                "temperature"
+            );
+
+
+        if (position !== -1) {
+
+            const start =
+                Math.max(
+                    0,
+                    position - 500
+                );
+
+
+            const end =
+                Math.min(
+                    text.length,
+                    position + 2500
+                );
+
+
+            return text.substring(
+                start,
+                end
+            );
+        }
+    }
+
+
+    // ==========================================
+    // GENERAL SEARCH
+    // ==========================================
+
+    const words =
+        lowerQuestion
+            .replace(/[?.,!]/g, "")
+            .split(/\s+/);
+
+
+    const stopWords = [
+        "what",
+        "is",
+        "the",
+        "of",
+        "a",
+        "an",
+        "for",
+        "to",
+        "in",
+        "on",
+        "and",
+        "or",
+        "does",
+        "how",
+        "where",
+        "which"
+    ];
+
+
+    const keywords =
+        words.filter(
+            word =>
+                word.length > 3 &&
+                !stopWords.includes(word)
+        );
+
+
+    // Search from the END of the document.
+    // This helps avoid table-of-contents matches.
+
+    for (const keyword of keywords) {
+
+        const position =
+            lowerText.lastIndexOf(
+                keyword
+            );
+
+
+        if (position !== -1) {
+
+            const start =
+                Math.max(
+                    0,
+                    position - 500
+                );
+
+
+            const end =
+                Math.min(
+                    text.length,
+                    position + 2500
+                );
+
+
+            return text.substring(
+                start,
+                end
+            );
+        }
+    }
+
+
+    return "No relevant information was found.";
+    }
+
+                
