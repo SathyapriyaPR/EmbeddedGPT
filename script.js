@@ -19,9 +19,9 @@ const pdfFile = document.getElementById("pdfFile");
 console.log("EmbeddedGPT JavaScript Loaded");
 
 
-// 3. Test message
+// 3.
 
-answerBox.value = "JavaScript is working!";
+a
 
 
 // 4. Ask button
