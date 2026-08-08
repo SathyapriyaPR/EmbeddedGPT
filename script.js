@@ -1,8 +1,7 @@
 // ==========================================
 // EmbeddedGPT
 // PDF Datasheet Reader
-// ==========================================
-alert("NEW EMBEDDEDGPT CODE");
+// ====================================
 
 // Get HTML elements
 
@@ -256,17 +255,13 @@ async function readPDF(file) {
         // ==========================================
 // SMART DATASHEET SEARCH - VERSION 2
 // ==========================================
-
 function findRelevantText(text, question) {
 
     const lowerText = text.toLowerCase();
     const lowerQuestion = question.toLowerCase();
 
-    console.log("Question:", question);
-
-
     // ==========================================
-    // VOLTAGE QUESTION
+    // VOLTAGE SEARCH
     // ==========================================
 
     if (
@@ -277,81 +272,43 @@ function findRelevantText(text, question) {
 
         console.log("Voltage question detected");
 
+        // Find ALL occurrences of "recommended operating conditions"
+        let positions = [];
 
-        // Look for the actual electrical section
-        const electricalPosition =
-            lowerText.indexOf(
-                "5. electrical characteristics"
-            );
+        let searchStart = 0;
 
+        while (true) {
 
-        if (electricalPosition !== -1) {
-
-            const electricalSection =
-                text.substring(
-                    electricalPosition
+            const position =
+                lowerText.indexOf(
+                    "recommended operating conditions",
+                    searchStart
                 );
 
-
-            const lowerElectricalSection =
-                electricalSection.toLowerCase();
-
-
-            // Look for recommended operating conditions
-            const operatingPosition =
-                lowerElectricalSection.indexOf(
-                    "recommended operating conditions"
-                );
-
-
-            if (operatingPosition !== -1) {
-
-                const start =
-                    Math.max(
-                        0,
-                        operatingPosition - 500
-                    );
-
-
-                const end =
-                    Math.min(
-                        electricalSection.length,
-                        operatingPosition + 4000
-                    );
-
-
-                return electricalSection.substring(
-                    start,
-                    end
-                );
+            if (position === -1) {
+                break;
             }
 
+            positions.push(position);
 
-            // If the exact heading isn't found,
-            // return the electrical section
-            return electricalSection.substring(
-                0,
-                4000
-            );
+            searchStart =
+                position + 1;
         }
-    }
+
+        console.log(
+            "Operating-condition matches:",
+            positions
+        );
 
 
-    // ==========================================
-    // CURRENT QUESTION
-    // ==========================================
+        // Use the LAST occurrence.
+        // The first one is normally in the contents/table of contents.
 
-    if (
-        lowerQuestion.includes("current")
-    ) {
+        if (positions.length > 0) {
 
-        const position =
-            lowerText.lastIndexOf(
-                "operating current"
-            );
+            const position =
+                positions[positions.length - 1];
 
-
-        if (position !== -1) {
 
             const start =
                 Math.max(
@@ -363,7 +320,36 @@ function findRelevantText(text, question) {
             const end =
                 Math.min(
                     text.length,
-                    position + 2500
+                    position + 4000
+                );
+
+
+            return text.substring(
+                start,
+                end
+            );
+        }
+
+
+        // Fallback: search for VDD33
+
+        const vddPosition =
+            lowerText.lastIndexOf("vdd33");
+
+
+        if (vddPosition !== -1) {
+
+            const start =
+                Math.max(
+                    0,
+                    vddPosition - 500
+                );
+
+
+            const end =
+                Math.min(
+                    text.length,
+                    vddPosition + 3000
                 );
 
 
@@ -376,7 +362,34 @@ function findRelevantText(text, question) {
 
 
     // ==========================================
-    // FREQUENCY QUESTION
+    // CURRENT SEARCH
+    // ==========================================
+
+    if (
+        lowerQuestion.includes("current")
+    ) {
+
+        const position =
+            lowerText.lastIndexOf(
+                "current"
+            );
+
+
+        if (position !== -1) {
+
+            return text.substring(
+                Math.max(0, position - 500),
+                Math.min(
+                    text.length,
+                    position + 3000
+                )
+            );
+        }
+    }
+
+
+    // ==========================================
+    // FREQUENCY SEARCH
     // ==========================================
 
     if (
@@ -392,30 +405,19 @@ function findRelevantText(text, question) {
 
         if (position !== -1) {
 
-            const start =
-                Math.max(
-                    0,
-                    position - 500
-                );
-
-
-            const end =
+            return text.substring(
+                Math.max(0, position - 500),
                 Math.min(
                     text.length,
-                    position + 2500
-                );
-
-
-            return text.substring(
-                start,
-                end
+                    position + 3000
+                )
             );
         }
     }
 
 
     // ==========================================
-    // TEMPERATURE QUESTION
+    // TEMPERATURE SEARCH
     // ==========================================
 
     if (
@@ -430,23 +432,12 @@ function findRelevantText(text, question) {
 
         if (position !== -1) {
 
-            const start =
-                Math.max(
-                    0,
-                    position - 500
-                );
-
-
-            const end =
+            return text.substring(
+                Math.max(0, position - 500),
                 Math.min(
                     text.length,
-                    position + 2500
-                );
-
-
-            return text.substring(
-                start,
-                end
+                    position + 3000
+                )
             );
         }
     }
@@ -482,50 +473,33 @@ function findRelevantText(text, question) {
     ];
 
 
-    const keywords =
-        words.filter(
-            word =>
-                word.length > 3 &&
-                !stopWords.includes(word)
-        );
+    for (const word of words) {
 
+        if (
+            word.length <= 3 ||
+            stopWords.includes(word)
+        ) {
+            continue;
+        }
 
-    // Search from the END of the document.
-    // This helps avoid table-of-contents matches.
-
-    for (const keyword of keywords) {
 
         const position =
-            lowerText.lastIndexOf(
-                keyword
-            );
+            lowerText.lastIndexOf(word);
 
 
         if (position !== -1) {
 
-            const start =
-                Math.max(
-                    0,
-                    position - 500
-                );
-
-
-            const end =
+            return text.substring(
+                Math.max(0, position - 500),
                 Math.min(
                     text.length,
-                    position + 2500
-                );
-
-
-            return text.substring(
-                start,
-                end
+                    position + 3000
+                )
             );
         }
     }
 
 
     return "No relevant information was found.";
-    }
-
-                
+}
+                                
